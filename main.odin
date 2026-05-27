@@ -1,39 +1,39 @@
 package main
 
-import "core:fmt"
-import "core:strings"
 import rl "vendor:raylib"
 
+WINDOW_WIDTH :: 1280
+WINDOW_HEIGHT :: 720
+GRAVITY :: f32(1800)
+FALL_GRAVITY_MULTIPLIER :: f32(1.6)
+FLAP_VELOCITY :: f32(-1000)
+
 main :: proc() {
-	wWidth: i32 : 1920
-	wHeight: i32 : 1080
-	rl.InitWindow(wWidth, wHeight, "Raylib test")
+	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "flappy odin")
 
-	circle := GameObject{{f32(wWidth) / 4, f32(wHeight) / 2}}
+	bird := Bird {
+		position   = {f32(WINDOW_WIDTH) / 6, f32(WINDOW_HEIGHT) / 2},
+		radius     = 32,
+		velocity_y = 0,
+	}
 
-	circleRadius: f32 = 64
-	circleFallSpeed: f32 = 0
-	DOWN_MODIFIER: f32 : 1.6
-	BASE_GRAVITY: f32 : 2200
-	FLAP_UP_SPEED: f32 : -1300
-	gravity := BASE_GRAVITY
 	rl.SetTargetFPS(160)
 
 	for !rl.WindowShouldClose() {
 		frameTime := rl.GetFrameTime()
 		//update
 		if rl.IsKeyPressed(.SPACE) {
-			circleFallSpeed = FLAP_UP_SPEED
+			bird.velocity_y = FLAP_VELOCITY
 		}
-		gravity = circleFallSpeed > 0 ? BASE_GRAVITY * DOWN_MODIFIER : BASE_GRAVITY
-		circleFallSpeed += gravity * frameTime
-		circle.position.y += circleFallSpeed * frameTime
+		gravity := bird.velocity_y > 0 ? GRAVITY * FALL_GRAVITY_MULTIPLIER : GRAVITY
+		bird.velocity_y += gravity * frameTime
+		bird.position.y += bird.velocity_y * frameTime
 
 		//draw
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RAYWHITE)
 
-		rl.DrawCircleV(circle.position, circleRadius, rl.BLUE)
+		rl.DrawCircleV(bird.position, bird.radius, rl.BLUE)
 
 		rl.DrawFPS(10, 10)
 
@@ -43,7 +43,9 @@ main :: proc() {
 	rl.CloseWindow()
 }
 
-GameObject :: struct {
-	position: [2]f32,
+Bird :: struct {
+	position:   [2]f32,
+	radius:     f32,
+	velocity_y: f32,
 }
 
