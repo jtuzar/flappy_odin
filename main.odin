@@ -9,17 +9,25 @@ main :: proc() {
 	wHeight: i32 : 1080
 	rl.InitWindow(wWidth, wHeight, "Raylib test")
 
-	circle := GameObject{{f32(wWidth) / 2, f32(wHeight) / 2}}
+	circle := GameObject{{f32(wWidth) / 4, f32(wHeight) / 2}}
 
 	circleRadius: f32 = 64
-	circleSpeed: f32 = 100
+	circleFallSpeed: f32 = 0
+	DOWN_MODIFIER: f32 : 1.6
+	BASE_GRAVITY: f32 : 2200
+	FLAP_UP_SPEED: f32 : -1300
+	gravity := BASE_GRAVITY
 	rl.SetTargetFPS(160)
 
 	for !rl.WindowShouldClose() {
+		frameTime := rl.GetFrameTime()
 		//update
-		circleMoveAmount := rl.GetFrameTime() * circleSpeed
-		translate2D(&circle, circleMoveAmount)
-
+		if rl.IsKeyPressed(.SPACE) {
+			circleFallSpeed = FLAP_UP_SPEED
+		}
+		gravity = circleFallSpeed > 0 ? BASE_GRAVITY * DOWN_MODIFIER : BASE_GRAVITY
+		circleFallSpeed += gravity * frameTime
+		circle.position.y += circleFallSpeed * frameTime
 
 		//draw
 		rl.BeginDrawing()
@@ -35,31 +43,7 @@ main :: proc() {
 	rl.CloseWindow()
 }
 
-Direction :: enum {
-	NoDirection,
-	Up,
-	Down,
-	Left,
-	Right,
-}
-
 GameObject :: struct {
 	position: [2]f32,
-}
-
-translate2D :: proc(obj: ^GameObject, amount: f32) {
-	if rl.IsKeyDown(.UP) {
-		obj.position.y -= amount
-	}
-	if rl.IsKeyDown(.DOWN) {
-		obj.position.y += amount
-	}
-	if rl.IsKeyDown(.LEFT) {
-		obj.position.x -= amount
-	}
-	if rl.IsKeyDown(.RIGHT) {
-		obj.position.x += amount
-	}
-
 }
 
