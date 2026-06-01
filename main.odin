@@ -20,7 +20,7 @@ main :: proc() {
 		},
 	}
 
-	rl.SetTargetFPS(160)
+	rl.SetTargetFPS(60)
 
 	for !rl.WindowShouldClose() {
 		//update
@@ -41,26 +41,27 @@ Bird :: struct {
 }
 
 Game :: struct {
-	bird:   Bird,
-	paused: bool,
+	bird:    Bird,
+	running: bool,
 }
 
 simulateGame :: proc(game: ^Game) {
-	if rl.IsKeyPressed(.P) {
-		game.paused = !game.paused
-	}
-	if game.paused {
+	if !game.running {
+		if rl.IsKeyPressed(.SPACE) {
+			game.running = true
+			game.bird.velocity_y = FLAP_VELOCITY
+		}
 		return
 	}
 	simulateBird(&game.bird)
 }
 
 simulateBird :: proc(bird: ^Bird) {
-	frameTime := rl.GetFrameTime()
 	if rl.IsKeyPressed(.SPACE) {
 		bird.velocity_y = FLAP_VELOCITY
 	}
 
+	frameTime := rl.GetFrameTime()
 	gravity := bird.velocity_y > 0 ? GRAVITY * FALL_GRAVITY_MULTIPLIER : GRAVITY
 	bird.velocity_y += gravity * frameTime
 	bird.position.y += bird.velocity_y * frameTime
@@ -73,12 +74,12 @@ drawGame :: proc(game: ^Game) {
 	drawFPS()
 	drawBird(&game.bird)
 
-	if game.paused {
+	if !game.running {
 		pauseFontSize: i32 = 72
-		pauseText: cstring = "Paused"
+		pauseText: cstring = "Press SPACE to start the game"
 		textWidt := rl.MeasureText(pauseText, pauseFontSize)
 		rl.DrawText(
-			"Paused",
+			pauseText,
 			i32(WINDOW_WIDTH / 2 - textWidt / 2),
 			i32(WINDOW_HEIGHT / 2 - pauseFontSize / 2),
 			pauseFontSize,
