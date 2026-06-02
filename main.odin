@@ -2,6 +2,7 @@ package main
 
 import "core:fmt"
 import "core:strings"
+import "core:time"
 import rl "vendor:raylib"
 
 WINDOW_WIDTH :: 1280
@@ -11,16 +12,10 @@ FALL_GRAVITY_MULTIPLIER :: f32(1.6)
 FLAP_VELOCITY :: f32(-1000)
 
 main :: proc() {
+	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "flappy odin")
-	game := Game {
-		bird = {
-			position = {f32(WINDOW_WIDTH) / 6, f32(WINDOW_HEIGHT) / 2},
-			radius = 32,
-			velocity_y = 0,
-		},
-	}
-
-	rl.SetTargetFPS(60)
+	game: Game
+	initGame(&game)
 
 	for !rl.WindowShouldClose() {
 		//update
@@ -32,6 +27,16 @@ main :: proc() {
 	}
 
 	rl.CloseWindow()
+}
+
+initGame :: proc(game: ^Game) {
+	game^ = {
+		bird = {
+			position = {f32(WINDOW_WIDTH) / 6, f32(WINDOW_HEIGHT) / 2},
+			radius = 32,
+			velocity_y = 0,
+		},
+	}
 }
 
 Bird :: struct {
@@ -46,6 +51,12 @@ Game :: struct {
 }
 
 simulateGame :: proc(game: ^Game) {
+	if game.bird.position.y <= game.bird.radius / 2 ||
+	   game.bird.position.y >= WINDOW_HEIGHT - game.bird.radius / 2 {
+		time.sleep(2 * time.Second)
+		initGame(game)
+	}
+
 	if !game.running {
 		if rl.IsKeyPressed(.SPACE) {
 			game.running = true
@@ -53,6 +64,8 @@ simulateGame :: proc(game: ^Game) {
 		}
 		return
 	}
+
+
 	simulateBird(&game.bird)
 }
 
