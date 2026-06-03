@@ -11,7 +11,7 @@ WINDOW_HEIGHT :: 720
 GRAVITY :: f32(1800)
 FALL_GRAVITY_MULTIPLIER :: f32(1.6)
 FLAP_VELOCITY :: f32(-800)
-PIPE_GAP_X :: 500
+PIPE_GAP_X :: 400
 PIPE_GAP_Y :: 250
 PIPE_PART_DIMENSIONS :: [2]f32{100, 500}
 PIPE_SPEED :: 120
@@ -48,7 +48,7 @@ initGame :: proc(game: ^Game) {
 initPipes :: proc(pipes: ^[5]GameObject) {
 	for &pipe, index in pipes {
 		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
-		pipe.position.y = WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
+		pipe.position.y = getPipePositionY()
 	}
 }
 
@@ -103,6 +103,12 @@ simulateBird :: proc(bird: ^Bird) {
 simulatePipes :: proc(pipes: ^[5]GameObject) {
 	for &pipe in pipes {
 		pipe.position.x -= rl.GetFrameTime() * PIPE_SPEED
+		if pipe.position.x < -PIPE_PART_DIMENSIONS.x {
+			pipe.position.y = getPipePositionY()
+			//WARN: this does not work, I need to either rotate the index around to always reference the pipe 5 places apart or I might just scratch this and use dynamic array
+			pipe.position.x = pipes[len(pipes) - 1].position.x + PIPE_GAP_X
+
+		}
 	}
 }
 
@@ -157,5 +163,9 @@ drawFPS :: proc() {
 		20,
 		rl.DARKGREEN,
 	)
+}
+
+getPipePositionY :: proc() -> f32 {
+	return WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
 }
 
