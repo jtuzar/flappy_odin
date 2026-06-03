@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:math/rand"
 import "core:strings"
 import "core:time"
 import rl "vendor:raylib"
@@ -9,7 +10,11 @@ WINDOW_WIDTH :: 1280
 WINDOW_HEIGHT :: 720
 GRAVITY :: f32(1800)
 FALL_GRAVITY_MULTIPLIER :: f32(1.6)
-FLAP_VELOCITY :: f32(-1000)
+FLAP_VELOCITY :: f32(-800)
+PIPE_GAP_X :: 500
+PIPE_GAP_Y :: 250
+PIPE_PART_DIMENSIONS :: [2]f32{100, 500}
+PIPE_SPEED :: 120
 
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
@@ -37,17 +42,30 @@ initGame :: proc(game: ^Game) {
 			velocity_y = 0,
 		},
 	}
+	initPipes(&game.pipes)
+}
+
+initPipes :: proc(pipes: ^[5]GameObject) {
+	for &pipe, index in pipes {
+		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
+		pipe.position.y = WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
+	}
+}
+
+GameObject :: struct {
+	position: [2]f32,
 }
 
 Bird :: struct {
-	position:   [2]f32,
-	radius:     f32,
-	velocity_y: f32,
+	radius:           f32,
+	velocity_y:       f32,
+	using gameObject: GameObject,
 }
 
 Game :: struct {
 	bird:    Bird,
 	running: bool,
+	pipes:   [5]GameObject,
 }
 
 simulateGame :: proc(game: ^Game) {
@@ -56,6 +74,7 @@ simulateGame :: proc(game: ^Game) {
 		time.sleep(2 * time.Second)
 		initGame(game)
 	}
+
 
 	if !game.running {
 		if rl.IsKeyPressed(.SPACE) {
@@ -67,6 +86,7 @@ simulateGame :: proc(game: ^Game) {
 
 
 	simulateBird(&game.bird)
+	simulatePipes(&game.pipes)
 }
 
 simulateBird :: proc(bird: ^Bird) {
@@ -80,11 +100,20 @@ simulateBird :: proc(bird: ^Bird) {
 	bird.position.y += bird.velocity_y * frameTime
 }
 
+simulatePipes :: proc(pipes: ^[5]GameObject) {
+	for &pipe in pipes {
+		pipe.position.x -= rl.GetFrameTime() * PIPE_SPEED
+	}
+}
+
 drawGame :: proc(game: ^Game) {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.LIGHTGRAY)
 
 	drawFPS()
+	for pipe in game.pipes {
+		drawPipe(pipe)
+	}
 	drawBird(&game.bird)
 
 	if !game.running {
@@ -107,6 +136,15 @@ drawGame :: proc(game: ^Game) {
 
 drawBird :: proc(bird: ^Bird) {
 	rl.DrawCircleV(bird.position, bird.radius, rl.DARKBLUE)
+}
+
+drawPipe :: proc(pipe: GameObject) {
+	rl.DrawRectangleV(
+		pipe.position + {0, -PIPE_GAP_Y / 2 - PIPE_PART_DIMENSIONS.y},
+		PIPE_PART_DIMENSIONS,
+		rl.GREEN,
+	)
+	rl.DrawRectangleV(pipe.position + {0, PIPE_GAP_Y / 2}, PIPE_PART_DIMENSIONS, rl.RED)
 }
 
 drawFPS :: proc() {
