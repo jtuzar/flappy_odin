@@ -15,6 +15,7 @@ PIPE_GAP_X :: 400
 PIPE_GAP_Y :: 250
 PIPE_PART_DIMENSIONS :: [2]f32{100, 500}
 PIPE_SPEED :: 120
+PIPE_ARRAY_SIZE :: 5
 
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
@@ -45,7 +46,7 @@ initGame :: proc(game: ^Game) {
 	initPipes(&game.pipes)
 }
 
-initPipes :: proc(pipes: ^[5]GameObject) {
+initPipes :: proc(pipes: ^[PIPE_ARRAY_SIZE]GameObject) {
 	for &pipe, index in pipes {
 		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
 		pipe.position.y = getPipePositionY()
@@ -65,8 +66,9 @@ Bird :: struct {
 Game :: struct {
 	bird:    Bird,
 	running: bool,
-	pipes:   [5]GameObject,
+	pipes:   [PIPE_ARRAY_SIZE]GameObject,
 }
+
 
 simulateGame :: proc(game: ^Game) {
 	if game.bird.position.y <= game.bird.radius / 2 ||
@@ -100,15 +102,14 @@ simulateBird :: proc(bird: ^Bird) {
 	bird.position.y += bird.velocity_y * frameTime
 }
 
-simulatePipes :: proc(pipes: ^[5]GameObject) {
-	for &pipe in pipes {
-		pipe.position.x -= rl.GetFrameTime() * PIPE_SPEED
+simulatePipes :: proc(pipes: ^[PIPE_ARRAY_SIZE]GameObject) {
+	for &pipe, index in pipes {
 		if pipe.position.x < -PIPE_PART_DIMENSIONS.x {
 			pipe.position.y = getPipePositionY()
-			//WARN: this does not work, I need to either rotate the index around to always reference the pipe 5 places apart or I might just scratch this and use dynamic array
-			pipe.position.x = pipes[len(pipes) - 1].position.x + PIPE_GAP_X
-
+			referencePipeIndex := (index + PIPE_ARRAY_SIZE - 1) % PIPE_ARRAY_SIZE
+			pipe.position.x = pipes[referencePipeIndex].position.x + PIPE_GAP_X
 		}
+		pipe.position.x -= rl.GetFrameTime() * PIPE_SPEED
 	}
 }
 
