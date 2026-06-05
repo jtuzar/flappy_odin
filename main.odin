@@ -1,7 +1,6 @@
 package main
 
 import "core:fmt"
-import "core:math"
 import "core:math/rand"
 import "core:strings"
 import "core:time"
@@ -224,8 +223,8 @@ hasBirdCollided :: proc(game: Game) -> bool {
 			{
 				bottomPartPos.x - pipe.bottomPart.dimensions.x / 2,
 				bottomPartPos.y - pipe.bottomPart.dimensions.y / 2,
-				pipe.topPart.dimensions.x,
-				pipe.topPart.dimensions.y,
+				pipe.bottomPart.dimensions.x,
+				pipe.bottomPart.dimensions.y,
 			},
 		) {
 			return true
