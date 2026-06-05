@@ -12,10 +12,10 @@ GRAVITY :: f32(1800)
 FALL_GRAVITY_MULTIPLIER :: f32(1.6)
 FLAP_VELOCITY :: f32(-800)
 PIPE_GAP_X :: 400
-PIPE_GAP_Y :: 250
-PIPE_PART_DIMENSIONS :: [2]f32{100, 500}
+PIPE_GAP_Y :: 260
+PIPE_PART_OFFSET_Y :: PIPE_PART_DIMENSIONS.y / 2 + PIPE_GAP_Y / 2
+PIPE_PART_DIMENSIONS :: Vec2{100, 500}
 PIPE_SPEED :: 120
-PIPE_ARRAY_SIZE :: 5
 
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
@@ -43,18 +43,37 @@ initGame :: proc(game: ^Game) {
 			velocity_y = 0,
 		},
 	}
-	initPipes(&game.pipes)
+	initPipes(game.pipes[:])
 }
 
-initPipes :: proc(pipes: ^[PIPE_ARRAY_SIZE]GameObject) {
+initPipes :: proc(pipes: []Pipe) {
 	for &pipe, index in pipes {
 		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
 		pipe.position.y = getPipePositionY()
+
+		pipe.topPart.dimensions = PIPE_PART_DIMENSIONS
+		pipe.bottomPart.dimensions = PIPE_PART_DIMENSIONS
+
+		pipe.topPart.position.y = -PIPE_PART_OFFSET_Y
+		pipe.bottomPart.position.y = PIPE_PART_OFFSET_Y
 	}
 }
 
+Vec2 :: [2]f32
+
 GameObject :: struct {
-	position: [2]f32,
+	position: Vec2,
+}
+
+Pipe :: struct {
+	using gameObject: GameObject,
+	topPart:          PipePart,
+	bottomPart:       PipePart,
+}
+
+PipePart :: struct {
+	using gameObject: GameObject,
+	dimensions:       Vec2,
 }
 
 Bird :: struct {
@@ -66,7 +85,7 @@ Bird :: struct {
 Game :: struct {
 	bird:    Bird,
 	running: bool,
-	pipes:   [PIPE_ARRAY_SIZE]GameObject,
+	pipes:   [5]Pipe,
 }
 
 
@@ -88,7 +107,7 @@ simulateGame :: proc(game: ^Game) {
 
 
 	simulateBird(&game.bird)
-	simulatePipes(&game.pipes)
+	simulatePipes(game.pipes[:])
 }
 
 simulateBird :: proc(bird: ^Bird) {
@@ -102,11 +121,11 @@ simulateBird :: proc(bird: ^Bird) {
 	bird.position.y += bird.velocity_y * frameTime
 }
 
-simulatePipes :: proc(pipes: ^[PIPE_ARRAY_SIZE]GameObject) {
+simulatePipes :: proc(pipes: []Pipe) {
 	for &pipe, index in pipes {
 		if pipe.position.x < -PIPE_PART_DIMENSIONS.x {
 			pipe.position.y = getPipePositionY()
-			referencePipeIndex := (index + PIPE_ARRAY_SIZE - 1) % PIPE_ARRAY_SIZE
+			referencePipeIndex := (index + len(pipes) - 1) % len(pipes)
 			pipe.position.x = pipes[referencePipeIndex].position.x + PIPE_GAP_X
 		}
 		pipe.position.x -= rl.GetFrameTime() * PIPE_SPEED
@@ -145,13 +164,24 @@ drawBird :: proc(bird: ^Bird) {
 	rl.DrawCircleV(bird.position, bird.radius, rl.DARKBLUE)
 }
 
-drawPipe :: proc(pipe: GameObject) {
+drawPipe :: proc(pipe: Pipe) {
+	topPartPosition := pipePartWorldPosition(pipe, pipe.topPart)
+	bottomPartPosition := pipePartWorldPosition(pipe, pipe.bottomPart)
+
 	rl.DrawRectangleV(
-		pipe.position + {0, -PIPE_GAP_Y / 2 - PIPE_PART_DIMENSIONS.y},
-		PIPE_PART_DIMENSIONS,
+		bottomPartPosition - pipe.bottomPart.dimensions / 2,
+		pipe.bottomPart.dimensions,
 		rl.GREEN,
 	)
-	rl.DrawRectangleV(pipe.position + {0, PIPE_GAP_Y / 2}, PIPE_PART_DIMENSIONS, rl.RED)
+	rl.DrawRectangleV(
+		topPartPosition - pipe.topPart.dimensions / 2,
+		pipe.topPart.dimensions,
+		rl.GOLD,
+	)
+
+	rl.DrawCircleV(pipe.position, 4, rl.RED)
+	rl.DrawCircleV(topPartPosition, 4, rl.DARKPURPLE)
+	rl.DrawCircleV(bottomPartPosition, 4, rl.DARKPURPLE)
 }
 
 drawFPS :: proc() {
@@ -168,5 +198,9 @@ drawFPS :: proc() {
 
 getPipePositionY :: proc() -> f32 {
 	return WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
+}
+
+pipePartWorldPosition :: proc(pipe: Pipe, pipePart: PipePart) -> Vec2 {
+	return pipe.position + pipePart.position
 }
 
