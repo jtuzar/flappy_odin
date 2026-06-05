@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import "core:math/rand"
 import "core:strings"
 import "core:time"
@@ -67,11 +68,11 @@ GameObject :: struct {
 
 Pipe :: struct {
 	using gameObject: GameObject,
-	topPart:          PipePart,
-	bottomPart:       PipePart,
+	topPart:          Rectangle,
+	bottomPart:       Rectangle,
 }
 
-PipePart :: struct {
+Rectangle :: struct {
 	using gameObject: GameObject,
 	dimensions:       Vec2,
 }
@@ -90,8 +91,7 @@ Game :: struct {
 
 
 simulateGame :: proc(game: ^Game) {
-	if game.bird.position.y <= game.bird.radius / 2 ||
-	   game.bird.position.y >= WINDOW_HEIGHT - game.bird.radius / 2 {
+	if hasBirdCollided(game^) {
 		time.sleep(2 * time.Second)
 		initGame(game)
 	}
@@ -178,10 +178,6 @@ drawPipe :: proc(pipe: Pipe) {
 		pipe.topPart.dimensions,
 		rl.GOLD,
 	)
-
-	rl.DrawCircleV(pipe.position, 4, rl.RED)
-	rl.DrawCircleV(topPartPosition, 4, rl.DARKPURPLE)
-	rl.DrawCircleV(bottomPartPosition, 4, rl.DARKPURPLE)
 }
 
 drawFPS :: proc() {
@@ -200,7 +196,47 @@ getPipePositionY :: proc() -> f32 {
 	return WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
 }
 
-pipePartWorldPosition :: proc(pipe: Pipe, pipePart: PipePart) -> Vec2 {
+pipePartWorldPosition :: proc(pipe: Pipe, pipePart: Rectangle) -> Vec2 {
 	return pipe.position + pipePart.position
+}
+
+hasBirdCollided :: proc(game: Game) -> bool {
+	for pipe in game.pipes {
+		topPartPos := pipePartWorldPosition(pipe, pipe.topPart)
+		bottomPartPos := pipePartWorldPosition(pipe, pipe.bottomPart)
+
+		if rl.CheckCollisionCircleRec(
+			game.bird.position,
+			game.bird.radius,
+			{
+				topPartPos.x - pipe.topPart.dimensions.x / 2,
+				topPartPos.y - pipe.topPart.dimensions.y / 2,
+				pipe.topPart.dimensions.x,
+				pipe.topPart.dimensions.y,
+			},
+		) {
+			return true
+		}
+
+		if rl.CheckCollisionCircleRec(
+			game.bird.position,
+			game.bird.radius,
+			{
+				bottomPartPos.x - pipe.bottomPart.dimensions.x / 2,
+				bottomPartPos.y - pipe.bottomPart.dimensions.y / 2,
+				pipe.topPart.dimensions.x,
+				pipe.topPart.dimensions.y,
+			},
+		) {
+			return true
+		}
+	}
+
+	if game.bird.position.y <= game.bird.radius / 2 ||
+	   game.bird.position.y >= WINDOW_HEIGHT - game.bird.radius / 2 {
+		return true
+	}
+
+	return false
 }
 
