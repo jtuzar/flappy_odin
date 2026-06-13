@@ -6,27 +6,26 @@ import "core:os"
 
 Spritesheet :: struct {
 	meta:   Meta,
-	frames: map[string]Frame,
+	frames: []FrameEntry,
+}
+
+FrameEntry :: struct {
+	frame:    Frame,
+	duration: u32,
 }
 
 Frame :: struct {
-	using asepriteSize: Size,
-	w, h:               f32,
-}
-
-Size :: struct {
-	x, y: f32,
-}
-
-Layer :: struct {
-	name, blendMode: string,
-	opacity:         u8,
+	x, y, w, h: f32,
 }
 
 Meta :: struct {
 	app, version, image, format, scale: string,
-	size:                               Size,
+	size:                               MetaSize,
 	frameTags:                          []string,
+}
+
+MetaSize :: struct {
+	w, h: f32,
 }
 
 loadSpritesheet :: proc(
@@ -34,13 +33,14 @@ loadSpritesheet :: proc(
 	allocator := context.allocator,
 	loc := #caller_location,
 ) -> ^Spritesheet {
+	log.infof("Loading spritesheet from path %v", path)
 
 	file, read_file_err := os.read_entire_file(path, allocator)
 	if read_file_err != nil {
 		log.errorf("Failed to read aseprite data file %v", read_file_err)
 		return nil
 	}
-	defer delete(file)
+	log.info("Loaded spritesheet json data file")
 
 	spritesheet := new(Spritesheet, allocator)
 
@@ -50,6 +50,7 @@ loadSpritesheet :: proc(
 		return nil
 	}
 
+	log.debug(spritesheet)
+
 	return spritesheet
 }
-

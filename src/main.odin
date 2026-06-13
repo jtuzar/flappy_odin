@@ -2,6 +2,7 @@ package main
 
 import ase "aseprite"
 import "core:fmt"
+import "core:log"
 import "core:math/rand"
 import "core:strings"
 import "core:time"
@@ -19,10 +20,13 @@ PIPE_PART_DIMENSIONS :: Vec2{100, 500}
 PIPE_SPEED :: 120
 
 main :: proc() {
+	context.logger = log.create_console_logger()
 	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "flappy odin")
 	game: Game
+	log.info("Initializing game")
 	initGame(&game)
+	log.info("Game initialized")
 
 	for !rl.WindowShouldClose() {
 		//update
@@ -42,17 +46,30 @@ initGame :: proc(game: ^Game) {
 		context.temp_allocator,
 	)
 	birdSpritesheet := new(Spritesheet)
+	log.info("Loadin texture to GPU")
+	texturePath := fmt.tprintf("../assets/sprites/%s", birdAsepriteSpriteSheet.meta.image)
 	birdSpritesheet.texture = rl.LoadTexture(
-		strings.clone_to_cstring(birdAsepriteSpriteSheet.meta.image, context.temp_allocator),
+		strings.clone_to_cstring(texturePath, context.temp_allocator),
 	)
 
+	log.info("Making frames slice")
 	birdSpritesheet.frames = make([]Frame, len(birdAsepriteSpriteSheet.frames))
 
-	for _, aseFrame in birdAsepriteSpriteSheet.frames {
-
-
+	log.info("Populating frames slice")
+	for aseFrame, i in birdAsepriteSpriteSheet.frames {
+		log.debug(aseFrame)
+		birdSpritesheet.frames[i] = Frame {
+			rect = rl.Rectangle {
+				x = aseFrame.frame.x,
+				y = aseFrame.frame.y,
+				width = aseFrame.frame.w,
+				height = aseFrame.frame.h,
+			},
+			durationMs = aseFrame.duration,
+		}
 	}
 
+	log.info("Initializing game object")
 	game^ = {
 		bird = {
 			position = {f32(WINDOW_WIDTH) / 6, f32(WINDOW_HEIGHT) / 2},
@@ -62,9 +79,11 @@ initGame :: proc(game: ^Game) {
 		},
 	}
 	initPipes(game.pipes[:])
+	log.debug(game^)
 }
 
 initPipes :: proc(pipes: []Pipe) {
+	log.info("Initializing pipes")
 	for &pipe, index in pipes {
 		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
 		pipe.position.y = getPipePositionY()
@@ -189,7 +208,12 @@ drawGame :: proc(game: ^Game) {
 }
 
 drawBird :: proc(bird: ^Bird) {
-	rl.DrawTextureRec()
+	rl.DrawTextureRec(
+		bird.spritesheet.texture,
+		bird.spritesheet.frames[0].rect,
+		bird.position,
+		rl.WHITE,
+	)
 	rl.DrawCircleLinesV(bird.position, bird.radius, rl.DARKBLUE)
 }
 
@@ -268,4 +292,3 @@ hasBirdCollided :: proc(game: Game) -> bool {
 
 	return false
 }
-
