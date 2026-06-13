@@ -1,5 +1,6 @@
 package main
 
+import ase "aseprite"
 import "core:fmt"
 import "core:math/rand"
 import "core:strings"
@@ -36,11 +37,28 @@ main :: proc() {
 }
 
 initGame :: proc(game: ^Game) {
+	birdAsepriteSpriteSheet := ase.loadSpritesheet(
+		"../assets/sprites/flappy.json",
+		context.temp_allocator,
+	)
+	birdSpritesheet := new(Spritesheet)
+	birdSpritesheet.texture = rl.LoadTexture(
+		strings.clone_to_cstring(birdAsepriteSpriteSheet.meta.image, context.temp_allocator),
+	)
+
+	birdSpritesheet.frames = make([]Frame, len(birdAsepriteSpriteSheet.frames))
+
+	for _, aseFrame in birdAsepriteSpriteSheet.frames {
+
+
+	}
+
 	game^ = {
 		bird = {
 			position = {f32(WINDOW_WIDTH) / 6, f32(WINDOW_HEIGHT) / 2},
 			radius = 32,
 			velocity_y = 0,
+			spritesheet = birdSpritesheet,
 		},
 	}
 	initPipes(game.pipes[:])
@@ -65,6 +83,16 @@ GameObject :: struct {
 	position: Vec2,
 }
 
+Spritesheet :: struct {
+	texture: rl.Texture2D,
+	frames:  []Frame,
+}
+
+Frame :: struct {
+	rect:       rl.Rectangle,
+	durationMs: u32,
+}
+
 Pipe :: struct {
 	using gameObject: GameObject,
 	topPart:          Rectangle,
@@ -79,6 +107,7 @@ Rectangle :: struct {
 Bird :: struct {
 	radius:           f32,
 	velocity_y:       f32,
+	spritesheet:      ^Spritesheet,
 	using gameObject: GameObject,
 }
 
@@ -160,7 +189,8 @@ drawGame :: proc(game: ^Game) {
 }
 
 drawBird :: proc(bird: ^Bird) {
-	rl.DrawCircleV(bird.position, bird.radius, rl.DARKBLUE)
+	rl.DrawTextureRec()
+	rl.DrawCircleLinesV(bird.position, bird.radius, rl.DARKBLUE)
 }
 
 drawPipe :: proc(pipe: Pipe) {
