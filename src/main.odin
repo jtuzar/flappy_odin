@@ -208,13 +208,21 @@ drawGame :: proc(game: ^Game) {
 }
 
 drawBird :: proc(bird: ^Bird) {
-	rl.DrawTextureRec(
+	destRect := rl.Rectangle {
+		x      = bird.position.x,
+		y      = bird.position.y,
+		width  = bird.spritesheet.frames[0].rect.width * 4,
+		height = bird.spritesheet.frames[0].rect.height * 4,
+	}
+	rl.DrawTexturePro(
 		bird.spritesheet.texture,
 		bird.spritesheet.frames[0].rect,
-		bird.position,
+		destRect,
+		{destRect.width / 2, destRect.height / 2},
+		0,
 		rl.WHITE,
 	)
-	rl.DrawCircleLinesV(bird.position, bird.radius, rl.DARKBLUE)
+	//rl.DrawCircleLinesV(bird.position, bird.radius, rl.DARKBLUE)
 }
 
 drawPipe :: proc(pipe: Pipe) {
@@ -292,3 +300,4 @@ hasBirdCollided :: proc(game: Game) -> bool {
 
 	return false
 }
+
