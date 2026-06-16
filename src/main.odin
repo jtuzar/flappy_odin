@@ -16,8 +16,9 @@ FLAP_VELOCITY :: f32(-800)
 PIPE_GAP_X :: 400
 PIPE_GAP_Y :: 260
 PIPE_PART_OFFSET_Y :: PIPE_PART_DIMENSIONS.y / 2 + PIPE_GAP_Y / 2
-PIPE_PART_DIMENSIONS :: Vec2{100, 500}
+PIPE_PART_DIMENSIONS :: Vec2{96, 450}
 PIPE_SPEED :: 180
+TEXTURE_SCALE :: 3
 
 main :: proc() {
 	context.logger = log.create_console_logger()
@@ -75,6 +76,8 @@ initGame :: proc(game: ^Game) {
 }
 
 initPipes :: proc(pipes: []Pipe) {
+	pipeTexture := rl.LoadTexture("../assets/sprites/pipe.png")
+
 	for &pipe, index in pipes {
 		pipe.position.x = f32(WINDOW_WIDTH / 2 + PIPE_GAP_X * index)
 		pipe.position.y = getPipePositionY()
@@ -84,6 +87,9 @@ initPipes :: proc(pipes: []Pipe) {
 
 		pipe.topPart.position.y = -PIPE_PART_OFFSET_Y
 		pipe.bottomPart.position.y = PIPE_PART_OFFSET_Y
+
+		pipe.topPart.texture = pipeTexture
+		pipe.bottomPart.texture = pipeTexture
 	}
 }
 
@@ -105,13 +111,14 @@ Frame :: struct {
 
 Pipe :: struct {
 	using gameObject: GameObject,
-	topPart:          Rectangle,
-	bottomPart:       Rectangle,
+	topPart:          PipePart,
+	bottomPart:       PipePart,
 }
 
-Rectangle :: struct {
+PipePart :: struct {
 	using gameObject: GameObject,
 	dimensions:       Vec2,
+	texture:          rl.Texture2D,
 }
 
 Bird :: struct {
@@ -202,8 +209,8 @@ drawBird :: proc(bird: ^Bird) {
 	destRect := rl.Rectangle {
 		x      = bird.position.x,
 		y      = bird.position.y,
-		width  = bird.spritesheet.frames[0].rect.width * 3,
-		height = bird.spritesheet.frames[0].rect.height * 3,
+		width  = bird.spritesheet.frames[0].rect.width * TEXTURE_SCALE,
+		height = bird.spritesheet.frames[0].rect.height * TEXTURE_SCALE,
 	}
 	rl.DrawTexturePro(
 		bird.spritesheet.texture,
@@ -220,16 +227,38 @@ drawPipe :: proc(pipe: Pipe) {
 	topPartPosition := pipePartWorldPosition(pipe, pipe.topPart)
 	bottomPartPosition := pipePartWorldPosition(pipe, pipe.bottomPart)
 
-	rl.DrawRectangleV(
-		bottomPartPosition - pipe.bottomPart.dimensions / 2,
-		pipe.bottomPart.dimensions,
-		rl.GREEN,
+	destRectBottom := rl.Rectangle {
+		x      = bottomPartPosition.x,
+		y      = bottomPartPosition.y,
+		width  = pipe.bottomPart.dimensions.x,
+		height = pipe.bottomPart.dimensions.y,
+	}
+
+	rl.DrawTexturePro(
+		pipe.bottomPart.texture,
+		{width = f32(pipe.bottomPart.texture.width), height = f32(pipe.bottomPart.texture.height)},
+		destRectBottom,
+		{destRectBottom.width / 2, destRectBottom.height / 2},
+		0,
+		rl.WHITE,
 	)
-	rl.DrawRectangleV(
-		topPartPosition - pipe.topPart.dimensions / 2,
-		pipe.topPart.dimensions,
-		rl.GOLD,
+
+	destRectTop := rl.Rectangle {
+		x      = topPartPosition.x,
+		y      = topPartPosition.y,
+		width  = pipe.topPart.dimensions.x,
+		height = pipe.topPart.dimensions.y,
+	}
+
+	rl.DrawTexturePro(
+		pipe.topPart.texture,
+		{width = -f32(pipe.topPart.texture.width), height = f32(pipe.topPart.texture.height)},
+		destRectTop,
+		{destRectTop.width / 2, destRectTop.height / 2},
+		180,
+		rl.WHITE,
 	)
+
 }
 
 drawFPS :: proc() {
@@ -248,7 +277,7 @@ getPipePositionY :: proc() -> f32 {
 	return WINDOW_HEIGHT / 2 + f32(rand.int32_range(-100, 100))
 }
 
-pipePartWorldPosition :: proc(pipe: Pipe, pipePart: Rectangle) -> Vec2 {
+pipePartWorldPosition :: proc(pipe: Pipe, pipePart: PipePart) -> Vec2 {
 	return pipe.position + pipePart.position
 }
 

@@ -40,7 +40,6 @@ loadSpritesheet :: proc(
 		log.errorf("Failed to read aseprite data file %v", read_file_err)
 		return nil
 	}
-	log.info("Loaded spritesheet json data file")
 
 	spritesheet := new(Spritesheet, allocator)
 
@@ -50,7 +49,6 @@ loadSpritesheet :: proc(
 		return nil
 	}
 
-	log.debug(spritesheet)
-
 	return spritesheet
 }
+
